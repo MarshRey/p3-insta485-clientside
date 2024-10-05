@@ -92,8 +92,6 @@ def get_post():
 
     connection = insta485.model.get_db()
     
-    login_seq()
-
     # If postid_lte is not provided, get the most recent postid
     if postid_lte is None:
         cur = connection.execute(
@@ -338,3 +336,41 @@ def like_post():
         "likeid": likeid,
         "url": f"/api/v1/likes/{likeid}/"
     }), 201
+    
+@insta485.app.route('/api/v1/likes/<int:likeid>/', methods=['DELETE'])
+@authenticate
+def delete_like(likeid):
+    """Delete a like."""
+    # Get the logged-in user's username
+    if 'username' in flask.session:
+        logname = flask.session['username']
+    else:
+        auth = flask.request.authorization
+        logname = auth.username
+
+    connection = insta485.model.get_db()
+
+    # Check if the like exists
+    cur = connection.execute(
+        "SELECT likeid, owner FROM likes WHERE likeid = ?",
+        (likeid,)
+    )
+    like = cur.fetchone()
+
+    if like is None:
+        # Like does not exist
+        return flask.jsonify({"message": "Like Not Found", "status_code": 404}), 404
+
+    # Check if the logged-in user owns the like
+    if like['owner'] != logname:
+        # User does not own the like
+        return flask.jsonify({"message": "Forbidden", "status_code": 403}), 403
+
+    # Delete the like
+    connection.execute(
+        "DELETE FROM likes WHERE likeid = ?",
+        (likeid,)
+    )
+
+    # Return 204 No Content on success
+    return ('', 204)
