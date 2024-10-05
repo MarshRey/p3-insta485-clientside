@@ -5,8 +5,10 @@ import uuid
 import hashlib
 import os
 import flask
-from flask import jsonify
+from flask import session
+from flask import request
 from flask import send_from_directory
+from flask import jsonify
 import insta485
 
 
@@ -999,6 +1001,8 @@ def plaintext_to_password_hash(plain_text_password, salt=uuid.uuid4().hex):
     # print(f"salt: {salt}", file=sys.stderr)
     return "$".join([algorithm, salt, password_hash])
 
+
+## TODO: PROJECT 3 STARTS HERE  ##
 @insta485.app.route('/api/v1/', methods=['GET'])
 def api_root():
     """Return list of available services."""
@@ -1009,3 +1013,95 @@ def api_root():
         "url": "/api/v1/"
     }
     return jsonify(response)
+    
+def authenticate(f):
+    def decorated_function(*args, **kwargs):
+        auth = request.authorization
+        if 'username' in session:
+            return f(*args, **kwargs)
+        elif auth:
+            username = auth.username
+            password = auth.password
+            # Replace with your actual authentication logic
+            if username == 'awdeorio' and password == 'chickens':
+                return f(*args, **kwargs)
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
+
+    # Manually set the attributes to preserve metadata
+    decorated_function.__name__ = f.__name__
+    decorated_function.__doc__ = f.__doc__
+    decorated_function.__module__ = f.__module__
+    return decorated_function
+
+@insta485.app.route('/api/v1/posts/', methods=['GET'])
+@authenticate
+def get_posts():
+    """Return paginated posts filtered by postid_lte, size, and page."""
+    # Get the logged-in user's username, either from the session or Basic Auth
+    if 'username' in flask.session:
+        logname = flask.session['username']
+    else:
+        auth = flask.request.authorization
+        logname = auth.username
+
+    # Get query parameters
+    postid_lte = flask.request.args.get('postid_lte', default=None, type=int)
+    size = flask.request.args.get('size', default=10, type=int)  # Default size is 10 posts
+    page = flask.request.args.get('page', default=0, type=int)  # Default page is 0 (first page)
+
+    # Ensure size is positive and page is non-negative
+    if size <= 0 or page < 0:
+        return jsonify({"message": "Invalid size or page parameter", "status_code": 400}), 400
+
+    connection = insta485.model.get_db()
+
+    # If postid_lte is not provided, get the most recent postid
+    if postid_lte is None:
+        cur = connection.execute(
+            """
+            SELECT MAX(postid) as max_postid FROM posts
+            WHERE owner = ? OR owner IN (SELECT username2 FROM following WHERE username1 = ?)
+            """, (logname, logname)
+        )
+        row = cur.fetchone()
+        if row is not None:
+            postid_lte = row['max_postid']
+
+    # Calculate the number of posts to skip based on the page number
+    offset = page * size
+
+    # Build the SQL query to fetch the posts
+    query = """
+        SELECT DISTINCT posts.postid, posts.filename
+        FROM posts
+        LEFT JOIN following ON following.username2 = posts.owner
+        WHERE (following.username1 = ? OR posts.owner = ?)
+        AND posts.postid <= ?
+        ORDER BY posts.postid DESC LIMIT ? OFFSET ?
+    """
+    query_params = (logname, logname, postid_lte, size, offset)
+
+    # Execute the query with size and offset for pagination
+    cur = connection.execute(query, query_params)
+    posts = cur.fetchall()
+
+    # Create a list of posts with postid and URL
+    results = [{"postid": post['postid'], "url": f"/api/v1/posts/{post['postid']}/"} for post in posts]
+
+    # Determine the "next" URL for pagination if we have more results to show
+    next_url = ""
+    if len(posts) == size:
+        next_url = f"/api/v1/posts/?size={size}&page={page + 1}&postid_lte={postid_lte}"
+    
+    
+    current_url = flask.request.path
+    query_params = request.args.to_dict()
+    query_string = "&".join([f"{key}={value}" for key, value in query_params.items()])
+    if query_string:
+        current_url += f"?{query_string}"
+        
+    return jsonify({
+        "next": next_url,
+        "results": results,
+        "url": current_url
+    })
