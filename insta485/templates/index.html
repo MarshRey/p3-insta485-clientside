@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+</head>
+<body>
+    <header>
+        <a href="/">Home</a>
+        <a href="/explore/" class="explore-link">Explore</a>
+        <a href="/users/{{ logged_in_user }}/" class="logged-in-user">{{ logged_in_user }}</a>
+    </header>
+    <main>
+        <h1>Posts</h1>
+        <div class="posts">
+            {% for post in posts %}
+                <div class="post">
+                    <a href="/posts/{{ post.postid }}/">just now: {{ post.created }}</a>
+                    <a href="/users/{{ post.username }}/">{{ post.username }}</a>
+                    <img src="/uploads/{{ post.user_filename }}" alt="{{ post.username }}'s profile picture">
+                    <img src="/uploads/{{ post.filename }}" alt="Post image">
+                    <p>{{ post.likes }} {{ 'like' if post.likes == 1 else 'likes' }}</p>
+                    <div class="comments">
+                        {% for comment in post.comments %}
+                            <p><a href="/users/{{ comment.username }}/">{{ comment.username }}</a> {{ comment.text }}</p>
+                        {% endfor %}
+                    </div>
+                    <!-- Like Form -->
+                    <form id="like-form-{{ post.postid }}" action="/likes/?target=/posts/{{ post.postid }}/" method="post" enctype="multipart/form-data" style="display: {{ 'none' if post.is_liked else 'block' }};">
+                        <input type="hidden" name="operation" value="like"/>
+                        <input type="hidden" name="postid" value="{{ post.postid }}"/>
+                        <input type="submit" value="like"/>
+                    </form>
+                    <!-- Unlike Form -->
+                    <form id="unlike-form-{{ post.postid }}" action="/likes/?target=/posts/{{ post.postid }}/" method="post" enctype="multipart/form-data" style="display: {{ 'block' if post.is_liked else 'none' }};">
+                        <input type="hidden" name="operation" value="unlike"/>
+                        <input type="hidden" name="postid" value="{{ post.postid }}"/>
+                        <input type="submit" name="unlike" value="unlike"/>
+                    </form>
+                    <!-- Comment Form -->
+                    <form action="/comments/?target=/posts/{{ post.postid }}/" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="operation" value="create"/>
+                        <input type="hidden" name="postid" value="{{ post.postid }}"/>
+                        <input type="text" name="text" required/>
+                        <input type="submit" name="comment" value="comment"/>
+                    </form>
+                    <form action="/comments/" method="post" style="display:none"> </form>
+                    <form action="/likes/" method="post" style="display:none"> </form>
+
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account</title>
+</head>
+<body>
+    <header>
+        <h1>Delete Account</h1>
+    </header>
+
+    <main>
+        <p>Are you sure you want to delete your account, <strong>{{ username }}</strong>? This action cannot be undone.</p>
+
+        <!-- Account deletion confirmation form -->
+        <form action="/accounts/?target=/accounts/create/" method="post" enctype="multipart/form-data">
+            <input type="submit" name="delete" value="confirm delete account"/>
+            <input type="hidden" name="operation" value="delete"/>
+        </form>
+
+        <!-- Optional: Link back to the home or profile page if they change their mind -->
+        <p><a href="/">Cancel</a></p>
+    </main>
+</body>

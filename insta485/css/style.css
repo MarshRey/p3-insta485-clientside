@@ -1,0 +1,131 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.header-list {
+    display: flex;
+    align-items: center;
+    /* padding on the sides */
+    margin-left: 40px;
+    margin-right: 40px;
+}
+
+.logo {
+    height: 50px; /* Adjust the height as needed */
+}
+
+.title {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.vertical-line {
+    width: 2px;
+    height: 50px; /* Match the height of the logo */
+    background-color: #000; /* Adjust the color as needed */
+    margin: 10px; /* Adjust the spacing as needed */
+}
+
+hr {
+    /* line thickness */
+    height: 2px;
+    /* padding on the sides */
+    background-color: #000; /* Adjust the color as needed */
+
+    margin-left: 40px;
+    margin-right: 40px;
+}
+
+.spacer {
+    flex-grow: 1;
+}
+
+.main-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the post containers horizontally */
+    padding: 20px;
+}
+
+.post-container {
+    display: inline-block;
+    justify-content: center;
+    list-style-type: none;
+    border: 2px solid #0a0a0a;
+    /* text color */
+    color: #000000;
+    /* padding on the sides */
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+}
+
+.post-text {
+    padding: 10px;
+}
+
+.post-image {
+    /* 600x 449 */
+    width: 600px;
+    height: 449px;
+}
+
+.post-profile-picture {
+    width: 25px;
+    height: 25px;
+    margin: 10px;
+}
+
+.post-date {
+    margin: 10px;
+    color: #808080;
+}
+
+a {
+    text-decoration: none;
+    color: #000000;
+}
+
+.profile-image-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile-post-image {
+    /* half size */
+    width: 400px;
+}
+
+.profile-image-container img{
+    padding: 10px;
+}
+
+.user-name {
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.user-info {
+    font-size: 20px;
+}
+
+.real-name {
+    font-size: 20px;
+}
+
+.main-profile-container {
+    display: flex;
+    flex-direction: column;
+    align-items: left; /* Center the post containers horizontally */
+    margin-left: 80px;
+}

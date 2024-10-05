@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Stop on errors and print commands
+set -e
+set -x
+
+# Run pycodestyle
+pycodestyle insta485
+
+# Run pydocstyle
+pydocstyle insta485
+
+# Run pylint
+pylint insta485
+
+# Run all unit tests using pytest
+pytest -v tests

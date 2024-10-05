@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Change Password</title>
+</head>
+<body>
+    <header>
+        <a href="/">Home</a>
+        <a href="/accounts/password/">Change password</a>
+        <a href="/accounts/delete/">Delete account</a>
+        <a href="/users/{{ user.username }}/">{{ user.username }}</a>
+    </header>
+
+    <main>
+        <h1>Edit Account</h1>
+        <div>
+            <p>{{ user.username }}</p>
+            <img src="{{ url_for('show_uploads', filename=user.profile_picture_url) }}" alt="{{ user.username }}'s profile picture">
+        </div>
+
+        <!-- DO NOT CHANGE THIS -->
+        <form action="/accounts/?target=" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*"/>
+            <input type="text" name="fullname" value="{{ user.fullname }}" required/>
+            <input type="text" name="email" value="{{ user.email }}" required/>
+            <input type="submit" name="update" value="submit"/>
+            <input type="hidden" name="operation" value="edit_account"/>
+        </form>
+  
+
+        <!-- Flash messages for errors/success -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    </main>
+</body>
+</html>

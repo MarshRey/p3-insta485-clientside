@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.username }}'s Profile</title>
+</head>
+<body>
+    <header>
+        <a href="/">Home</a>
+        <a href="/explore/">Explore</a>
+        <a href="/users/{{ logged_in_user }}/">{{ logged_in_user }}</a>
+    </header>
+    <main>
+        <p>{{ user.fullname }}</p>
+        <img src="{{ url_for('show_uploads', filename=user.profile_picture_url) }}" alt="{{ user.username }}'s profile picture">
+        
+        <!-- Follow/Unfollow logic -->
+        {% if relationship == "following" %}
+            <form action="/following/?target={{ request.path }}" method="post" enctype="multipart/form-data">
+                <input type="submit" name="unfollow" value="Unfollow"/>
+                <input type="hidden" name="username" value="{{ user.username }}"/>
+                <input type="hidden" name="operation" value="unfollow"/>
+            </form>
+        {% elif relationship == "not following" %}
+            <form action="/following/?target={{ request.path }}" method="post" enctype="multipart/form-data">
+                <input type="submit" name="follow" value="Follow"/>
+                <input type="hidden" name="username" value="{{ user.username }}"/>
+                <input type="hidden" name="operation" value="follow"/>
+            </form>
+        {% endif %}
+
+        <!-- Display post counts and follow info -->
+        <p>{{ post_count }} {{ 'post' if post_count == 1 else 'posts' }}</p>
+        <p><a href="/users/{{ user.username }}/followers/">{{ follower_count }} {{ 'follower' if follower_count == 1 else 'followers' }}</a></p>
+        <p><a href="/users/{{ user.username }}/following/">{{ following_count }} following</a></p>
+
+        <!-- Show edit and upload options for logged-in user's own profile -->
+        {% if logged_in_user == user.username %}
+            <a href="/accounts/edit/">Edit profile</a>
+            <form action="/accounts/logout/" method="post" enctype="multipart/form-data">
+                <input type="submit" name="logout" value="Logout"/>
+            </form>
+            <form action="/posts/?target={{ request.path }}" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept="image/*" required/>
+                <input type="submit" name="create_post" value="Upload new post"/>
+                <input type="hidden" name="operation" value="create"/>
+            </form>
+        {% endif %}
+
+        <!-- Display posts -->
+        <div class="posts">
+            {% if posts %}
+                {% for post in posts %}
+                    <a href="/posts/{{ post.postid }}/">
+                        <img src="{{ url_for('show_uploads', filename=post.filename) }}" alt="Post image">
+                    </a>
+                {% endfor %}
+            {% else %}
+                <p>No posts yet.</p>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

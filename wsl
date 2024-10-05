@@ -1,0 +1,4 @@
+  UID   PID  PPID        F CPU PRI NI       SZ    RSS WCHAN     S             ADDR TTY           TIME CMD           SL  RE PAGEIN   LIM     TSIZ  %CPU %MEM
+  502  4786  4785     4006   0  31  0 410920960   3504 -      S                   0 ttys004    0:00.10 -zsh           0   0      0     -        0   0.0  0.0
+  502  6115  1001     4006   0  31  0 410388464   2432 -      Ss+                 0 ttys005    0:00.04 /bin/zsh -il   0   0      0     -        0   0.0  0.0
+  502  4300  1001     4006   0  31  0 410362864   1104 -      Ss+                 0 ttys003    0:00.03 /bin/zsh -i    0   0      0     -        0   0.0  0.0

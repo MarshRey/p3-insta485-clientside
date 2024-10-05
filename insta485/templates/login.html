@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <header>
+        <h1>Login to Insta485</h1>
+    </header>
+
+    <main>
+        <!-- Display login form -->
+        <form action="/accounts/?target=/" method="post" enctype="multipart/form-data">
+            <label for="username">Username:</label>
+            <input type="text" name="username" required placeholder="Enter your username"/><br/>
+
+            <label for="password">Password:</label>
+            <input type="password" name="password" required placeholder="Enter your password"/><br/>
+
+            <input type="submit" value="login"/>
+            <input type="hidden" name="operation" value="login"/>
+        </form>
+
+        <!-- Error handling (optional) -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul>
+              {% for message in messages %}
+                <li>{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Link to create account -->
+        <p>Don't have an account? <a href="/accounts/create/">Create one here</a></p>
+    </main>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+</head>
+<body>
+    <header>
+        <!-- Link to the login page in the top navigation -->
+        <a href="/accounts/login/">Login</a>
+    </header>
+
+    <main>
+        <h1>Create an Account</h1>
+
+        <!-- Account creation form -->
+        <form action="/accounts/?target=/" method="post" enctype="multipart/form-data">
+            <label for="file">Profile Picture:</label>
+            <input type="file" name="file" required/><br/>
+
+            <label for="fullname">Full Name:</label>
+            <input type="text" name="fullname" required placeholder="Enter your full name"/><br/>
+
+            <label for="username">Username:</label>
+            <input type="text" name="username" required placeholder="Choose a username"/><br/>
+
+            <label for="email">Email:</label>
+            <input type="text" name="email" required placeholder="Enter your email"/><br/>
+
+            <label for="password">Password:</label>
+            <input type="password" name="password" required placeholder="Enter your password"/><br/>
+
+            <input type="submit" name="signup" value="sign up"/>
+            <input type="hidden" name="operation" value="create"/>
+        </form>
+
+        <!-- Error handling (optional) -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul>
+              {% for message in messages %}
+                <li>{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Link to the login page after the sign-up button -->
+        <p>Already have an account? <a href="/accounts/login/">Log in here</a></p>
+    </main>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user_url_slug }}'s Followers</title>
+</head>
+<body>
+    <header>
+        <a href="/">Home</a>
+        <a href="/explore/" class="explore-link">Explore</a>
+        <a href="/users/{{ logged_in_user }}/" class="logged-in-user">{{ logged_in_user }}</a>
+    </header>
+
+    <main>
+        <h1>Followers of {{ user_url_slug }}</h1>
+
+        {% for follower in followers %}
+            <div class="follower">
+                <!-- User Profile Picture -->
+                <img src="{{ url_for('show_uploads', filename=follower.profile_pic) }}" alt="{{ follower.username }}'s profile picture" class="profile-icon">
+
+                <!-- Username with link -->
+                <a href="/users/{{ follower.username }}/">{{ follower.username }}</a>
+                <p>{{ follower.fullname }}</p>
+
+                <!-- Relationship buttons -->
+                {% if follower.relationship == "following" %}
+                    <h1 >following</h1>
+                    <form action="/following/?target={{ request.path }}" method="post" enctype="multipart/form-data">
+                        <input type="submit" name="unfollow" value="unfollow"/>
+                        <input type="hidden" name="username" value="{{ follower.username }}"/>
+                        <input type="hidden" name="operation" value="unfollow"/>
+                    </form>
+                {% elif follower.relationship == "not following" %}
+                    <h1>not following</h1>
+                    <form action="/following/?target={{ request.path }}" method="post" enctype="multipart/form-data">
+                        <input type="submit" name="follow" value="follow"/>
+                        <input type="hidden" name="username" value="{{ follower.username }}"/>
+                        <input type="hidden" name="operation" value="follow"/>
+                    </form>
+                {% endif %}
+            </div>
+            <hr/>
+        {% endfor %}
+    </main>
+</body>
+</html>

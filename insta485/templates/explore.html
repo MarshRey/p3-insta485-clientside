@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore</title>
+</head>
+<body>
+    <header>
+        <a href="/">Home</a>
+        <a href="/explore/">Explore</a>
+        <a href="/users/{{ logged_in_user }}/">{{ logged_in_user }}</a>
+    </header>
+
+    <main>
+        <h1>Explore</h1>
+        <h2>Users you can follow</h2>
+
+        <!-- Loop through all users that the logged-in user is not following -->
+        {% for user in users %}
+        <div class="user">
+            <!-- Display profile icon -->
+            <img src="{{ url_for('show_uploads', filename=user.profile_pic) }}" alt="Profile picture of {{ user.username }}" class="profile-pic">
+
+            <!-- Link to the user's profile -->
+            <a href="/users/{{ user.username }}/">{{ user.username }}</a>
+
+            <!-- Follow button -->
+            <form action="/follow/" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="username" value="{{ user.username }}"/>
+                <input type="submit" name = "follow" value="Follow"/>
+            </form>
+        </div>
+        <hr/>
+        {% endfor %}
+    </main>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title id="title">Insta485</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <header>
+        <a href="/">Home</a>
+        <a href="/explore/" class="explore-link">Explore</a>
+        <a href="/users/{{ logged_in_user }}/" class="logged-in-user">{{ logged_in_user }}</a>
+    </header>
+
+    <main>
+        <h1>{{ user_url_slug }} is Following</h1>
+        {% for user in following %}
+            <div class="followed-user">
+                <!-- User Profile Picture -->
+                <img src="{{ url_for('show_uploads', filename=user.profile_pic) }}" alt="{{ user.username }}'s profile picture" class="profile-icon">
+
+                <!-- Username with link -->
+                <a href="/users/{{ user.username }}/">{{ user.username }}</a>
+                <p>{{ user.fullname }}</p>
+
+                <!-- Relationship buttons -->
+                {% if user.relationship == "following" %}
+                    <h1>following</h1>
+                    <form action="/following/?target={{ request.path }}" method="post" enctype="multipart/form-data">
+                        <input type="submit" name="unfollow" value="unfollow"/>
+                        <input type="hidden" name="username" value="{{ user.username }}"/>
+                        <input type="hidden" name="operation" value="unfollow"/>
+                    </form>
+                {% elif user.relationship == "not following" %}
+                    <h1>not following</h1>
+                    <form action="/following/?target={{ request.path }}" method="post" enctype="multipart/form-data">
+                        <input type="submit" name="follow" value="follow"/>
+                        <input type="hidden" name="username" value="{{ user.username }}"/>
+                        <input type="hidden" name="operation" value="follow"/>
+                    </form>
+                {% endif %}
+            </div>
+            <hr/>
+        {% endfor %}
+    </main>
+</body>
+</html>
