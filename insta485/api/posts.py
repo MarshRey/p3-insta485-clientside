@@ -434,3 +434,41 @@ def add_comment():
 
     # Return 201 Created with the comment details
     return flask.jsonify(response_data), 201
+  
+@insta485.app.route('/api/v1/comments/<int:commentid>/', methods=['DELETE'])
+@authenticate
+def delete_comment(commentid):
+    """Delete a comment."""
+    # Get the logged-in user's username
+    if 'username' in flask.session:
+        logname = flask.session['username']
+    else:
+        auth = flask.request.authorization
+        logname = auth.username
+
+    connection = insta485.model.get_db()
+
+    # Check if the comment exists
+    cur = connection.execute(
+        "SELECT owner FROM comments WHERE commentid = ?",
+        (commentid,)
+    )
+    comment = cur.fetchone()
+    
+    if comment is None:
+        # Comment does not exist
+        return flask.jsonify({"message": "Comment Not Found", "status_code": 404}), 404
+
+    # Check if the logged-in user owns the comment
+    if comment['owner'] != logname:
+        # User doesn't own the comment, return 403 Forbidden
+        return flask.jsonify({"message": "Forbidden", "status_code": 403}), 403
+
+    # Delete the comment
+    connection.execute(
+        "DELETE FROM comments WHERE commentid = ?",
+        (commentid,)
+    )
+
+    # Return 204 No Content on success
+    return '', 204
