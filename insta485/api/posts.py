@@ -374,3 +374,63 @@ def delete_like(likeid):
 
     # Return 204 No Content on success
     return ('', 204)
+  
+@insta485.app.route('/api/v1/comments/', methods=['POST'])
+@authenticate
+def add_comment():
+    """Add a new comment to a post."""
+    # Get the logged-in user's username
+    if 'username' in flask.session:
+        logname = flask.session['username']
+    else:
+        auth = flask.request.authorization
+        logname = auth.username
+
+    # Get the postid from the query parameter
+    postid = flask.request.args.get('postid', default=None, type=int)
+    if postid is None:
+        return flask.jsonify({"message": "Missing postid", "status_code": 400}), 400
+
+    # Get the comment text from the query or form data
+    comment_text = flask.request.json.get('text', None)
+        
+    print(f"Comment text: {comment_text}", file=sys.stderr)
+
+    if not comment_text:
+        return flask.jsonify({"message": "Missing comment text", "status_code": 400}), 400
+
+    connection = insta485.model.get_db()
+
+    # Verify that the post exists
+    cur = connection.execute(
+        "SELECT postid FROM posts WHERE postid = ?",
+        (postid,)
+    )
+    post = cur.fetchone()
+    if post is None:
+        return flask.jsonify({"message": "Post Not Found", "status_code": 404}), 404
+
+    # Insert the new comment into the database
+    connection.execute(
+        """
+        INSERT INTO comments (owner, postid, text)
+        VALUES (?, ?, ?)
+        """, (logname, postid, comment_text)
+    )
+
+    # Get the ID of the newly inserted comment
+    cur = connection.execute("SELECT last_insert_rowid() as commentid")
+    commentid = cur.fetchone()['commentid']
+
+    # Prepare the response data for the newly added comment
+    response_data = {
+        "commentid": commentid,
+        "lognameOwnsThis": True,
+        "owner": logname,
+        "ownerShowUrl": f"/users/{logname}/",
+        "text": comment_text,
+        "url": f"/api/v1/comments/{commentid}/"
+    }
+
+    # Return 201 Created with the comment details
+    return flask.jsonify(response_data), 201
