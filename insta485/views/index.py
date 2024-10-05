@@ -5,6 +5,7 @@ import uuid
 import hashlib
 import os
 import flask
+from flask import jsonify
 from flask import send_from_directory
 import insta485
 
@@ -997,3 +998,14 @@ def plaintext_to_password_hash(plain_text_password, salt=uuid.uuid4().hex):
     print(f"algorithm: {algorithm}", file=sys.stderr)
     # print(f"salt: {salt}", file=sys.stderr)
     return "$".join([algorithm, salt, password_hash])
+
+@insta485.app.route('/api/v1/', methods=['GET'])
+def api_root():
+    """Return list of available services."""
+    response = {
+        "comments": "/api/v1/comments/",
+        "likes": "/api/v1/likes/",
+        "posts": "/api/v1/posts/",
+        "url": "/api/v1/"
+    }
+    return jsonify(response)
