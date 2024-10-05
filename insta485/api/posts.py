@@ -5,6 +5,8 @@ from flask import session
 from flask import request
 from flask import jsonify
 import sys
+import hashlib
+from functools import wraps
 
 ## TODO: PROJECT 3 STARTS HERE  ##
 @insta485.app.route('/api/v1/', methods=['GET'])
@@ -19,22 +21,53 @@ def api_root():
     return jsonify(response)
     
 def authenticate(f):
+    @wraps(f)
     def decorated_function(*args, **kwargs):
-        auth = request.authorization
-        if 'username' in session:
-            return f(*args, **kwargs)
+        auth = flask.request.authorization
+        
+        # Check for session-based authentication
+        if 'username' in flask.session:
+            username = flask.session['username']
         elif auth:
+            # Basic Authentication logic
             username = auth.username
             password = auth.password
-            # Replace with your actual authentication logic
-            if username == 'awdeorio' and password == 'chickens':
-                return f(*args, **kwargs)
-        return jsonify({"message": "Forbidden", "status_code": 403}), 403
 
-    # Manually set the attributes to preserve metadata
-    decorated_function.__name__ = f.__name__
-    decorated_function.__doc__ = f.__doc__
-    decorated_function.__module__ = f.__module__
+            # Connect to the database
+            connection = insta485.model.get_db()
+
+            # Query for the user's password in the database
+            db_password = connection.execute(
+                "SELECT password FROM users WHERE username = ?",
+                (username,)
+            ).fetchone()
+
+            if not db_password:
+                return flask.jsonify({"message": "Invalid credentials", "status_code": 401}), 401
+
+            # Split the stored password (algorithm$salt$hash)
+            password_parts = db_password['password'].split('$')
+            if len(password_parts) != 3:
+                return flask.jsonify({"message": "Invalid password format", "status_code": 500}), 500
+
+            algorithm, db_salt, db_hash = password_parts
+
+            # Use the salt to hash the provided password
+            hash_obj = hashlib.new(algorithm)
+            salted_password = db_salt + password
+            hash_obj.update(salted_password.encode('utf-8'))
+            provided_password_hash = hash_obj.hexdigest()
+
+            # Check if the hashed password matches the stored hash
+            if provided_password_hash != db_hash:
+                return flask.jsonify({"message": "Invalid credentials", "status_code": 401}), 401
+        else:
+            # No session or authentication provided
+            return flask.jsonify({"message": "Authentication required", "status_code": 401}), 401
+
+        # Successful authentication, proceed with the request
+        return f(*args, **kwargs)
+    
     return decorated_function
 
 @insta485.app.route('/api/v1/posts/', methods=['GET'])
@@ -58,6 +91,8 @@ def get_post():
         return jsonify({"message": "Invalid size or page parameter", "status_code": 400}), 400
 
     connection = insta485.model.get_db()
+    
+    login_seq()
 
     # If postid_lte is not provided, get the most recent postid
     if postid_lte is None:
@@ -239,3 +274,67 @@ def get_single_post(postid):
 #         "url": flask.request.path,
 #     }
 #     return flask.jsonify(**context)
+
+
+@insta485.app.route('/api/v1/likes/', methods=['POST'])
+@authenticate
+def like_post():
+    """Create one like for a specific post."""
+    # Get the logged-in user's username
+    if 'username' in flask.session:
+        logname = flask.session['username']
+    else:
+        auth = flask.request.authorization
+        logname = auth.username
+
+    # Get the postid from the query parameter
+    postid = flask.request.args.get('postid', default=None, type=int)
+
+    # If postid is not provided, return 400 Bad Request
+    if postid is None:
+        return jsonify({"message": "Missing postid", "status_code": 400}), 400
+
+    # Ignore the body for this request if any is sent
+    # Proceed only based on the query parameter
+
+    connection = insta485.model.get_db()
+
+    # Verify that the post exists
+    cur = connection.execute(
+        "SELECT postid FROM posts WHERE postid = ?", (postid,)
+    )
+    post = cur.fetchone()
+    if post is None:
+        # Post not found
+        return jsonify({"message": "Not Found", "status_code": 404}), 404
+
+    # Check if the logged-in user has already liked the post
+    cur = connection.execute(
+        """
+        SELECT likeid FROM likes
+        WHERE postid = ? AND owner = ?
+        """, (postid, logname)
+    )
+    like = cur.fetchone()
+
+    if like is not None:
+        # Like already exists, return the existing like with a 200 response
+        return jsonify({
+            "likeid": like["likeid"],
+            "url": f"/api/v1/likes/{like['likeid']}/"
+        }), 200
+
+    # If no like exists, insert a new like
+    cur = connection.execute(
+        """
+        INSERT INTO likes (owner, postid)
+        VALUES (?, ?)
+        """, (logname, postid)
+    )
+    likeid = cur.lastrowid
+
+    # Return the newly created like with a 201 status
+    return jsonify({
+        "likeid": likeid,
+        "url": f"/api/v1/likes/{likeid}/"
+    }), 201
