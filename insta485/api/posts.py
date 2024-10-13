@@ -43,7 +43,7 @@ def authenticate(f):
             ).fetchone()
 
             if not db_password:
-                return flask.jsonify({"message": "Invalid credentials", "status_code": 401}), 401
+                return flask.jsonify({"message": "Invalid credentials", "status_code": 403}), 403
 
             # Split the stored password (algorithm$salt$hash)
             password_parts = db_password['password'].split('$')
@@ -60,10 +60,10 @@ def authenticate(f):
 
             # Check if the hashed password matches the stored hash
             if provided_password_hash != db_hash:
-                return flask.jsonify({"message": "Invalid credentials", "status_code": 401}), 401
+                return flask.jsonify({"message": "Invalid credentials", "status_code": 403}), 403
         else:
             # No session or authentication provided
-            return flask.jsonify({"message": "Authentication required", "status_code": 401}), 401
+            return flask.jsonify({"message": "Authentication required", "status_code": 403}), 403
 
         # Successful authentication, proceed with the request
         return f(*args, **kwargs)
