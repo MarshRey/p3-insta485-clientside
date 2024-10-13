@@ -1,4 +1,4 @@
-import React, { StrictMode,  useState, useEffect } from "react";
+import React, { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import Post from "./post";
 import dayjs from 'dayjs';
@@ -19,25 +19,22 @@ function Feed() {
   const [posts, setPosts] = useState([]);        // State to store post details
   const [nextUrl, setNextUrl] = useState(null);  // State for the next page URL
   const [error, setError] = useState(null);      // State for error handling
+  const [newComment, setNewComment] = useState(""); // State for new comment input
 
   // Function to fetch posts
   const fetchPosts = async (url) => {
     try {
-      // Fetch the main posts data
       const response = await fetch(url);
       const data = await response.json();
 
-      // Process results (array of posts)
       const newPosts = await Promise.all(data.results.map(async (postInfo) => {
-        // Fetch detailed information for each post by its URL
         const postResponse = await fetch(postInfo.url);
         return await postResponse.json();
       }));
 
-      // Update the state with the new posts and the next page URL
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      setNextUrl(data.next);  // Set the URL for fetching the next page
-      setLoading(false);      // Data has been loaded
+      setNextUrl(data.next);  
+      setLoading(false);      
     } catch (err) {
       console.error('Error fetching posts:', err);
       setError('Failed to load posts.');
@@ -48,13 +45,11 @@ function Feed() {
   // Function to toggle likes for a post
   const handleLikeToggle = async (_post) => {
     try {
-      // /api/v1/likes/<int:likeid>
-      // Grab likeid from the post object
       const postid = _post.postid;
-      const isLiked = _post.likes.lognameLikesThis;  // Check if the user has already liked the post
-      const likeid = _post.likes.url;  // Get the likeid for the post
-      const url = isLiked ? likeid : `/api/v1/likes/?postid=${postid}`;  // Construct the URL
-      const method = isLiked ? 'DELETE' : 'POST';  // Determine the HTTP method
+      const isLiked = _post.likes.lognameLikesThis;
+      const likeid = _post.likes.url;
+      const url = isLiked ? likeid : `/api/v1/likes/?postid=${postid}`;
+      const method = isLiked ? 'DELETE' : 'POST';
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -62,15 +57,12 @@ function Feed() {
 
       if (response.ok) {
         var updateUrl = null;
-        try{
+        try {
           const json = await response.json();
-          console.log(json);
           updateUrl = json.url;
+        } catch (error) {
+          console.error('Expected error in like toggle that I\'m too lazy to fix:', error);
         }
-        catch (error){
-          // console.error('Expected error in like toggle that I\'m too lazy to fix:', error);
-        }
-        // Update the likes count and lognameLikesThis in the state
         setPosts((prevPosts) =>
           prevPosts.map((post) =>
             post.postid === postid
@@ -78,9 +70,9 @@ function Feed() {
                   ...post,
                   likes: {
                     ...post.likes,
-                    lognameLikesThis: !isLiked,  // Toggle like status
-                    numLikes: isLiked ? post.likes.numLikes - 1 : post.likes.numLikes + 1, // Update likes count
-                    url: updateUrl,  // Update the like URL
+                    lognameLikesThis: !isLiked,
+                    numLikes: isLiked ? post.likes.numLikes - 1 : post.likes.numLikes + 1,
+                    url: updateUrl,
                   },
                 }
               : post
@@ -94,16 +86,71 @@ function Feed() {
     }
   };
 
+  // Function to add a comment
+  const handleCommentSubmit = async (event, postid) => {
+    event.preventDefault();
+    try {
+      const response = await fetch(`/api/v1/comments?postid=${postid}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newComment }),
+      });
+
+      if (response.ok) {
+        const updatedPost = await response.json();
+        var oldComments = posts.find((post) => post.postid === postid).comments;
+        updatedPost.comments = [...oldComments, updatedPost];
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.postid === postid 
+              ? { 
+                ...post,
+                comments: updatedPost.comments 
+              } : post
+          )
+        );
+        setNewComment(""); // Reset input field
+      } else {
+        console.error('Failed to add comment');
+      }
+    } catch (error) {
+      console.error('Error in comment submit:', error);
+    }
+  };
+
+  // Function to delete a comment
+  const handleDeleteComment = async (postid, commentid) => {
+    try {
+      const response = await fetch(`/api/v1/comments/${commentid}/`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.postid === postid
+              ? { ...post, comments: post.comments.filter((comment) => comment.commentid !== commentid) }
+              : post
+          )
+        );
+      } else {
+        console.error('Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Error in comment delete:', error);
+    }
+  };
+
   // Fetch the initial posts when the component mounts
   useEffect(() => {
-    const initialUrl = '/api/v1/posts/';  // Initial API endpoint
+    const initialUrl = '/api/v1/posts/';
     fetchPosts(initialUrl);
   }, []);
 
   // Function to load more posts (pagination)
   const loadMorePosts = () => {
     if (nextUrl) {
-      fetchPosts(nextUrl);  // Fetch the next set of posts
+      fetchPosts(nextUrl);
     }
   };
 
@@ -114,7 +161,8 @@ function Feed() {
   if (error) {
     return <div>{error}</div>;
   }
-  console.log(posts[0]);
+
+  console.log(posts); 
   return (
     <div>
       {posts.map((post) => (
@@ -125,32 +173,47 @@ function Feed() {
 
           {/* Render post creation time using dayjs */}
           <p>
-            Posted {dayjs.utc(post.created).local().fromNow()}  {/* Converts UTC to local time and displays relative time */}
+            Posted {dayjs.utc(post.created).local().fromNow()}
           </p>
 
-          {/* Rendering likes: Ensure numLikes is a number */}
           <p>{post.likes.numLikes} {post.likes.numLikes === 1 ? 'like' : 'likes'}</p>
-
-          {/* Like/Unlike button */}
           <button onClick={() => handleLikeToggle(post)}>
             {post.likes.lognameLikesThis ? 'Unlike' : 'Like'}
           </button>
 
-          {/* Conditionally render if lognameLikesThis is true/false */}
-          <p>{post.likes.lognameLikesThis ? 'You like this post.' : 'You haven\'t liked this post yet.'}</p>
-
-          {/* Render comments */}
           <div className="comments">
             {post.comments.map((comment) => (
-              <p key={comment.commentid}>
-                <strong>{comment.owner}</strong> {comment.text}
-              </p>
+              <div key={comment.commentid} className="comment">
+                <span data-testid="comment-text">
+                  <strong>{comment.owner}</strong> {comment.text}
+                </span>
+                {comment.lognameOwnsThis && (
+                  <button
+                    data-testid="delete-comment-button"
+                    onClick={() => handleDeleteComment(post.postid, comment.commentid)}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
             ))}
+
+            {/* Comment input form */}
+            <form
+              data-testid="comment-form"
+              onSubmit={(event) => handleCommentSubmit(event, post.postid)}
+            >
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+              />
+            </form>
           </div>
         </div>
       ))}
 
-      {/* Button to load more posts if there's a next page */}
       {nextUrl && <button onClick={loadMorePosts}>Load More</button>}
     </div>
   );
