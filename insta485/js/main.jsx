@@ -68,10 +68,10 @@ function Feed() {
           const json = await response.json();
           updateUrl = json.url;
         } catch (error) {
-          console.error(
-            "Expected error in like toggle that I'm too lazy to fix:",
-            error,
-          );
+          // console.error(
+          //   "Expected error in like toggle that I'm too lazy to fix:",
+          //   error,
+          // );
         }
         setPosts((prevPosts) =>
           prevPosts.map((post) =>
@@ -186,7 +186,7 @@ function Feed() {
   if (error) {
     return <div>{error}</div>;
   }
-
+  console.log(posts);
   return (
     <div>
       {/* Infinite Scroll component wrapping the posts */}
@@ -199,8 +199,8 @@ function Feed() {
       >
         {posts.map((post) => (
           <div key={post.postid} className="post">
-            <h2>{post.owner}</h2>
-
+            <a href = {post.ownerShowUrl}>{post.owner}</a>
+            <img src = {post.ownerImgUrl} alt = "Avatar"/>
             {/* Double-clicking the image should like the post if it's not already liked */}
             <img
               src={post.imgUrl}
@@ -211,13 +211,13 @@ function Feed() {
             <p>{post.caption}</p>
 
             {/* Render post creation time using dayjs */}
-            <p>Posted {dayjs.utc(post.created).local().fromNow()}</p>
+            <a href = {post.postShowUrl}>Posted {dayjs.utc(post.created).local().fromNow()}</a>
 
             <p>
               {post.likes.numLikes}{" "}
               {post.likes.numLikes === 1 ? "like" : "likes"}
             </p>
-            <button onClick={() => handleLikeToggle(post)}>
+            <button data-testid='like-unlike-button' onClick={() => handleLikeToggle(post)}>
               {post.likes.lognameLikesThis ? "Unlike" : "Like"}
             </button>
 
@@ -225,7 +225,7 @@ function Feed() {
               {post.comments.map((comment) => (
                 <div key={comment.commentid} className="comment">
                   <span data-testid="comment-text">
-                    <strong>{comment.owner}</strong> {comment.text}
+                    <strong><a href = {comment.ownerShowUrl}> {comment.owner} </a></strong> {comment.text}
                   </span>
                   {comment.lognameOwnsThis && (
                     <button
