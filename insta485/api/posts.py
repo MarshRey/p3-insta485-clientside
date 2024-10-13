@@ -1,14 +1,13 @@
 """REST API for posts."""
-import flask
-import insta485
-from flask import session
-from flask import request
-from flask import jsonify
 import sys
 import hashlib
 from functools import wraps
+import flask
+from flask import request
+from flask import jsonify
+import insta485
 
-## TODO: PROJECT 3 STARTS HERE  ##
+
 @insta485.app.route('/api/v1/', methods=['GET'])
 def api_root():
     """Return list of available services."""
@@ -19,12 +18,14 @@ def api_root():
         "url": "/api/v1/"
     }
     return jsonify(response)
-    
+
+
 def authenticate(f):
+    """Decorate to authenticate the user."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         auth = flask.request.authorization
-        
+
         # Check for session-based authentication
         if 'username' in flask.session:
             username = flask.session['username']
@@ -37,18 +38,17 @@ def authenticate(f):
             connection = insta485.model.get_db()
 
             # Query for the user's password in the database
-            db_password = connection.execute(
-                "SELECT password FROM users WHERE username = ?",
-                (username,)
-            ).fetchone()
+            db_password = get_password(connection, username)
 
             if not db_password:
-                return flask.jsonify({"message": "Invalid credentials", "status_code": 403}), 403
+                return flask.jsonify({"message": "Invalid credentials",
+                                      "status_code": 403}), 403
 
             # Split the stored password (algorithm$salt$hash)
             password_parts = db_password['password'].split('$')
             if len(password_parts) != 3:
-                return flask.jsonify({"message": "Invalid password format", "status_code": 500}), 500
+                return flask.jsonify({"message": "Invalid password format",
+                                      "status_code": 500}), 500
 
             algorithm, db_salt, db_hash = password_parts
 
@@ -60,15 +60,18 @@ def authenticate(f):
 
             # Check if the hashed password matches the stored hash
             if provided_password_hash != db_hash:
-                return flask.jsonify({"message": "Invalid credentials", "status_code": 403}), 403
+                return flask.jsonify({"message": "Invalid credentials",
+                                      "status_code": 403}), 403
         else:
             # No session or authentication provided
-            return flask.jsonify({"message": "Authentication required", "status_code": 403}), 403
+            return flask.jsonify({"message": "Authentication required",
+                                  "status_code": 403}), 403
 
         # Successful authentication, proceed with the request
         return f(*args, **kwargs)
-    
+
     return decorated_function
+
 
 @insta485.app.route('/api/v1/posts/', methods=['GET'])
 @authenticate
@@ -83,21 +86,23 @@ def get_post():
 
     # Get query parameters
     postid_lte = flask.request.args.get('postid_lte', default=None, type=int)
-    size = flask.request.args.get('size', default=10, type=int)  # Default size is 10 posts
-    page = flask.request.args.get('page', default=0, type=int)  # Default page is 0 (first page)
+    size = flask.request.args.get('size', default=10, type=int)
+    page = flask.request.args.get('page', default=0, type=int)
 
     # Ensure size is positive and page is non-negative
     if size <= 0 or page < 0:
-        return jsonify({"message": "Invalid size or page parameter", "status_code": 400}), 400
+        return jsonify({"message": "Invalid size or page parameter",
+                        "status_code": 400}), 400
 
     connection = insta485.model.get_db()
-    
+
     # If postid_lte is not provided, get the most recent postid
     if postid_lte is None:
         cur = connection.execute(
             """
             SELECT MAX(postid) as max_postid FROM posts
-            WHERE owner = ? OR owner IN (SELECT username2 FROM following WHERE username1 = ?)
+            WHERE owner = ? OR owner IN (SELECT username2
+            FROM following WHERE username1 = ?)
             """, (logname, logname)
         )
         row = cur.fetchone()
@@ -105,7 +110,7 @@ def get_post():
             postid_lte = row['max_postid']
 
     # Calculate the number of posts to skip based on the page number
-    offset = page * size
+    # offset = page * size # too many variables ugh
 
     # Build the SQL query to fetch the posts
     query = """
@@ -116,37 +121,39 @@ def get_post():
         AND posts.postid <= ?
         ORDER BY posts.postid DESC LIMIT ? OFFSET ?
     """
-    query_params = (logname, logname, postid_lte, size, offset)
+    query_params = (logname, logname, postid_lte, size, page * size)
 
     # Execute the query with size and offset for pagination
     cur = connection.execute(query, query_params)
     posts = cur.fetchall()
 
     # Create a list of posts with postid and URL
-    results = [{"postid": post['postid'], "url": f"/api/v1/posts/{post['postid']}/"} for post in posts]
+    results = [{"postid": post['postid'],
+                "url": f"/api/v1/posts/{post['postid']}/"} for post in posts]
 
     # Determine the "next" URL for pagination if we have more results to show
     next_url = ""
     if len(posts) == size:
-        next_url = f"/api/v1/posts/?size={size}&page={page + 1}&postid_lte={postid_lte}"
-    
-    
+        next_url = f"/api/v1/posts/?size={size}" + \
+            f"&page={page + 1}&postid_lte={postid_lte}"
+
     current_url = flask.request.path
     query_params = request.args.to_dict()
-    query_string = "&".join([f"{key}={value}" for key, value in query_params.items()])
+    query_string = "&".join([f"{key}={value}"
+                             for key, value in query_params.items()])
     if query_string:
         current_url += f"?{query_string}"
-        
+
     return jsonify({
         "next": next_url,
         "results": results,
         "url": current_url
     })
-    
+
+
 @insta485.app.route('/api/v1/posts/<int:postid>/', methods=['GET'])
 @authenticate
 def get_single_post(postid):
-    print("Executing get_single_post route", file=sys.stderr)
     """Return the details for a specific post."""
     # Get the logged-in user's username
     if 'username' in flask.session:
@@ -158,13 +165,13 @@ def get_single_post(postid):
     connection = insta485.model.get_db()
 
     # Fetch post details
-    cur = connection.execute(
-    """
-    SELECT posts.postid, posts.created, posts.filename AS post_img, posts.owner,
-           users.filename AS owner_img, users.username
-    FROM posts
-    JOIN users ON posts.owner = users.username
-    WHERE posts.postid = ?
+    cur = connection.execute("""
+        SELECT posts.postid, posts.created, posts.filename
+        AS post_img, posts.owner,
+        users.filename AS owner_img, users.username
+        FROM posts
+        JOIN users ON posts.owner = users.username
+        WHERE posts.postid = ?
     """, (postid,)
     )
     post = cur.fetchone()
@@ -185,10 +192,11 @@ def get_single_post(postid):
         """, (postid,)
     )
     comments = cur.fetchall()
-    
+
     if comments is None:
-        return jsonify({"message": "Commonts Not Found", "status_code": 404}), 404
-    
+        return jsonify({"message": "Commonts Not Found",
+                        "status_code": 404}), 404
+
     # Prepare comments list
     comments_list = [
         {
@@ -227,7 +235,7 @@ def get_single_post(postid):
     response = {
         "comments": comments_list,
         "comments_url": f"/api/v1/comments/?postid={postid}",
-        "created": post["created"],  # Keep this as a timestamp, not human-readable
+        "created": post["created"],
         "imgUrl": f"/uploads/{post['post_img']}",
         "likes": {
             "lognameLikesThis": logname_likes_this,
@@ -243,35 +251,6 @@ def get_single_post(postid):
     }
 
     return jsonify(response)
-
-
-# @insta485.app.route('/api/v1/posts/<int:postid_url_slug>/')
-# def get_post(postid_url_slug):
-#     """Return post on postid.
-
-#     Example:
-#     {
-#       "created": "2017-09-28 04:33:28",
-#       "imgUrl": "/uploads/122a7d27ca1d7420a1072f695d9290fad4501a41.jpg",
-#       "owner": "awdeorio",
-#       "ownerImgUrl": "/uploads/e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg",
-#       "ownerShowUrl": "/users/awdeorio/",
-#       "postShowUrl": "/posts/1/",
-#       "postid": 1,
-#       "url": "/api/v1/posts/1/"
-#     }
-#     """
-#     context = {
-#         "created": "2017-09-28 04:33:28",
-#         "imgUrl": "/uploads/122a7d27ca1d7420a1072f695d9290fad4501a41.jpg",
-#         "owner": "awdeorio",
-#         "ownerImgUrl": "/uploads/e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg",
-#         "ownerShowUrl": "/users/awdeorio/",
-#         "postShowUrl": f"/posts/{postid_url_slug}/",
-#         "postid": postid_url_slug,
-#         "url": flask.request.path,
-#     }
-#     return flask.jsonify(**context)
 
 
 @insta485.app.route('/api/v1/likes/', methods=['POST'])
@@ -330,13 +309,14 @@ def like_post():
         """, (logname, postid)
     )
     likeid = cur.lastrowid
-    print (likeid, file=sys.stderr)
+    # print(likeid, file=sys.stderr)
     # Return the newly created like with a 201 status
     return jsonify({
         "likeid": likeid,
         "url": f"/api/v1/likes/{likeid}/"
     }), 201
-    
+
+
 @insta485.app.route('/api/v1/likes/<int:likeid>/', methods=['DELETE'])
 @authenticate
 def delete_like(likeid):
@@ -356,11 +336,12 @@ def delete_like(likeid):
         (likeid,)
     )
     like = cur.fetchone()
-    print (like, file=sys.stderr)
-    print (likeid, file=sys.stderr)
+    # print(like, file=sys.stderr)
+    # print(likeid, file=sys.stderr)
     if like is None:
         # Like does not exist
-        return flask.jsonify({"message": "Like Not Found", "status_code": 404}), 404
+        return flask.jsonify({"message": "Like Not Found",
+                              "status_code": 404}), 404
 
     # Check if the logged-in user owns the like
     if like['owner'] != logname:
@@ -375,7 +356,8 @@ def delete_like(likeid):
 
     # Return 204 No Content on success
     return (jsonify(''), 204)
-  
+
+
 @insta485.app.route('/api/v1/comments/', methods=['POST'])
 @authenticate
 def add_comment():
@@ -390,15 +372,17 @@ def add_comment():
     # Get the postid from the query parameter
     postid = flask.request.args.get('postid', default=None, type=int)
     if postid is None:
-        return flask.jsonify({"message": "Missing postid", "status_code": 400}), 400
+        return flask.jsonify({"message": "Missing postid",
+                              "status_code": 400}), 400
 
     # Get the comment text from the query or form data
     comment_text = flask.request.json.get('text', None)
-        
+
     print(f"Comment text: {comment_text}", file=sys.stderr)
 
     if not comment_text:
-        return flask.jsonify({"message": "Missing comment text", "status_code": 400}), 400
+        return flask.jsonify({"message": "Missing comment text",
+                              "status_code": 400}), 400
 
     connection = insta485.model.get_db()
 
@@ -409,7 +393,8 @@ def add_comment():
     )
     post = cur.fetchone()
     if post is None:
-        return flask.jsonify({"message": "Post Not Found", "status_code": 404}), 404
+        return flask.jsonify({"message": "Post Not Found",
+                              "status_code": 404}), 404
 
     # Insert the new comment into the database
     connection.execute(
@@ -435,7 +420,8 @@ def add_comment():
 
     # Return 201 Created with the comment details
     return flask.jsonify(response_data), 201
-  
+
+
 @insta485.app.route('/api/v1/comments/<int:commentid>/', methods=['DELETE'])
 @authenticate
 def delete_comment(commentid):
@@ -455,10 +441,11 @@ def delete_comment(commentid):
         (commentid,)
     )
     comment = cur.fetchone()
-    
+
     if comment is None:
         # Comment does not exist
-        return flask.jsonify({"message": "Comment Not Found", "status_code": 404}), 404
+        return flask.jsonify({"message": "Comment Not Found",
+                              "status_code": 404}), 404
 
     # Check if the logged-in user owns the comment
     if comment['owner'] != logname:
@@ -473,3 +460,12 @@ def delete_comment(commentid):
 
     # Return 204 No Content on success
     return '', 204
+
+
+def get_password(connection, username):
+    """Get the password for a user."""
+    a = connection.execute(
+                "SELECT password FROM users WHERE username = ?",
+                (username,)
+            ).fetchone()
+    return a

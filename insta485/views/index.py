@@ -7,6 +7,7 @@ import os
 import flask
 from flask import send_from_directory
 import insta485
+from insta485.api.posts import get_password
 
 
 @insta485.app.route('/')
@@ -755,11 +756,9 @@ def login_seq(connection):
 
     if not username or not password:
         flask.abort(400)
+
     # Grab the password from the database
-    db_password = connection.execute(
-        "SELECT password FROM users WHERE username = ?",
-        (username,)
-    ).fetchone()
+    db_password = get_password(connection, username)
     if not db_password:
         flask.abort(403)
     # Password is stored as algorithm$salt$hash, split to get the salt

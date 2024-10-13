@@ -186,7 +186,7 @@ function Feed() {
   if (error) {
     return <div>{error}</div>;
   }
-  console.log(posts);
+  // console.log(posts);
   return (
     <div>
       {/* Infinite Scroll component wrapping the posts */}
