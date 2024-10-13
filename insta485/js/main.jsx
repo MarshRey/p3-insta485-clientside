@@ -1,27 +1,25 @@
 import React, { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import Post from "./post";
-import InfiniteScroll from 'react-infinite-scroll-component'; // Import the Infinite Scroll component
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import utc from 'dayjs/plugin/utc';
+import InfiniteScroll from "react-infinite-scroll-component"; // Import the Infinite Scroll component
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import utc from "dayjs/plugin/utc";
 
 const root = createRoot(document.getElementById("reactEntry"));
-root.render(
-    <Feed />
-);
+root.render(<Feed />);
 
 // Extend dayjs with the necessary plugins
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
 function Feed() {
-  const [loading, setLoading] = useState(true);  // Loading state
-  const [posts, setPosts] = useState([]);        // State to store post details
-  const [nextUrl, setNextUrl] = useState(null);  // State for the next page URL
-  const [error, setError] = useState(null);      // State for error handling
+  const [loading, setLoading] = useState(true); // Loading state
+  const [posts, setPosts] = useState([]); // State to store post details
+  const [nextUrl, setNextUrl] = useState(null); // State for the next page URL
+  const [error, setError] = useState(null); // State for error handling
   const [newComment, setNewComment] = useState(""); // State for new comment input
-  const [hasMore, setHasMore] = useState(true);  // To manage if more posts are available for scrolling
+  const [hasMore, setHasMore] = useState(true); // To manage if more posts are available for scrolling
 
   // Function to fetch posts
   const fetchPosts = async (url) => {
@@ -29,13 +27,15 @@ function Feed() {
       const response = await fetch(url);
       const data = await response.json();
 
-      const newPosts = await Promise.all(data.results.map(async (postInfo) => {
-        const postResponse = await fetch(postInfo.url);
-        return await postResponse.json();
-      }));
+      const newPosts = await Promise.all(
+        data.results.map(async (postInfo) => {
+          const postResponse = await fetch(postInfo.url);
+          return await postResponse.json();
+        }),
+      );
 
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      setNextUrl(data.next);  
+      setNextUrl(data.next);
       setLoading(false);
 
       // If there's no next page, set hasMore to false
@@ -43,8 +43,8 @@ function Feed() {
         setHasMore(false);
       }
     } catch (err) {
-      console.error('Error fetching posts:', err);
-      setError('Failed to load posts.');
+      console.error("Error fetching posts:", err);
+      setError("Failed to load posts.");
       setLoading(false);
     }
   };
@@ -56,10 +56,10 @@ function Feed() {
       const isLiked = _post.likes.lognameLikesThis;
       const likeid = _post.likes.url;
       const url = isLiked ? likeid : `/api/v1/likes/?postid=${postid}`;
-      const method = isLiked ? 'DELETE' : 'POST';
+      const method = isLiked ? "DELETE" : "POST";
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
       });
 
       if (response.ok) {
@@ -68,7 +68,10 @@ function Feed() {
           const json = await response.json();
           updateUrl = json.url;
         } catch (error) {
-          console.error('Expected error in like toggle that I\'m too lazy to fix:', error);
+          console.error(
+            "Expected error in like toggle that I'm too lazy to fix:",
+            error,
+          );
         }
         setPosts((prevPosts) =>
           prevPosts.map((post) =>
@@ -78,25 +81,27 @@ function Feed() {
                   likes: {
                     ...post.likes,
                     lognameLikesThis: !isLiked,
-                    numLikes: isLiked ? post.likes.numLikes - 1 : post.likes.numLikes + 1,
+                    numLikes: isLiked
+                      ? post.likes.numLikes - 1
+                      : post.likes.numLikes + 1,
                     url: updateUrl,
                   },
                 }
-              : post
-          )
+              : post,
+          ),
         );
       } else {
-        console.error('Failed to update like status');
+        console.error("Failed to update like status");
       }
     } catch (error) {
-      console.error('Error in like toggle:', error);
+      console.error("Error in like toggle:", error);
     }
   };
 
   // Function to handle double-click on image
   const handleDoubleClick = (post) => {
     if (!post.likes.lognameLikesThis) {
-      handleLikeToggle(post);  // Like the post only if it's not already liked
+      handleLikeToggle(post); // Like the post only if it's not already liked
     }
   };
 
@@ -116,19 +121,20 @@ function Feed() {
         updatedPost.comments = [...oldComments, updatedPost];
         setPosts((prevPosts) =>
           prevPosts.map((post) =>
-            post.postid === postid 
-              ? { 
-                ...post,
-                comments: updatedPost.comments 
-              } : post
-          )
+            post.postid === postid
+              ? {
+                  ...post,
+                  comments: updatedPost.comments,
+                }
+              : post,
+          ),
         );
         setNewComment(""); // Reset input field
       } else {
-        console.error('Failed to add comment');
+        console.error("Failed to add comment");
       }
     } catch (error) {
-      console.error('Error in comment submit:', error);
+      console.error("Error in comment submit:", error);
     }
   };
 
@@ -143,21 +149,26 @@ function Feed() {
         setPosts((prevPosts) =>
           prevPosts.map((post) =>
             post.postid === postid
-              ? { ...post, comments: post.comments.filter((comment) => comment.commentid !== commentid) }
-              : post
-          )
+              ? {
+                  ...post,
+                  comments: post.comments.filter(
+                    (comment) => comment.commentid !== commentid,
+                  ),
+                }
+              : post,
+          ),
         );
       } else {
-        console.error('Failed to delete comment');
+        console.error("Failed to delete comment");
       }
     } catch (error) {
-      console.error('Error in comment delete:', error);
+      console.error("Error in comment delete:", error);
     }
   };
 
   // Fetch the initial posts when the component mounts
   useEffect(() => {
-    const initialUrl = '/api/v1/posts/';
+    const initialUrl = "/api/v1/posts/";
     fetchPosts(initialUrl);
   }, []);
 
@@ -181,9 +192,9 @@ function Feed() {
       {/* Infinite Scroll component wrapping the posts */}
       <InfiniteScroll
         dataLength={posts.length} // Current number of posts
-        next={loadMorePosts}      // Function to call when scrolling to the bottom
-        hasMore={hasMore}         // Whether or not there are more posts to load
-        loader={<h4>Loading more posts...</h4>}  // Loader displayed while loading new posts
+        next={loadMorePosts} // Function to call when scrolling to the bottom
+        hasMore={hasMore} // Whether or not there are more posts to load
+        loader={<h4>Loading more posts...</h4>} // Loader displayed while loading new posts
         endMessage={<p>No more posts to load</p>} // Message displayed when all posts are loaded
       >
         {posts.map((post) => (
@@ -191,22 +202,23 @@ function Feed() {
             <h2>{post.owner}</h2>
 
             {/* Double-clicking the image should like the post if it's not already liked */}
-            <img 
-              src={post.imgUrl} 
-              alt="Post" 
-              onDoubleClick={() => handleDoubleClick(post)}  // Double-click handler
+            <img
+              src={post.imgUrl}
+              alt="Post"
+              onDoubleClick={() => handleDoubleClick(post)} // Double-click handler
             />
 
             <p>{post.caption}</p>
 
             {/* Render post creation time using dayjs */}
-            <p>
-              Posted {dayjs.utc(post.created).local().fromNow()}
-            </p>
+            <p>Posted {dayjs.utc(post.created).local().fromNow()}</p>
 
-            <p>{post.likes.numLikes} {post.likes.numLikes === 1 ? 'like' : 'likes'}</p>
+            <p>
+              {post.likes.numLikes}{" "}
+              {post.likes.numLikes === 1 ? "like" : "likes"}
+            </p>
             <button onClick={() => handleLikeToggle(post)}>
-              {post.likes.lognameLikesThis ? 'Unlike' : 'Like'}
+              {post.likes.lognameLikesThis ? "Unlike" : "Like"}
             </button>
 
             <div className="comments">
@@ -218,7 +230,9 @@ function Feed() {
                   {comment.lognameOwnsThis && (
                     <button
                       data-testid="delete-comment-button"
-                      onClick={() => handleDeleteComment(post.postid, comment.commentid)}
+                      onClick={() =>
+                        handleDeleteComment(post.postid, comment.commentid)
+                      }
                     >
                       Delete
                     </button>
