@@ -6,56 +6,31 @@
     <title>Home Page</title>
 </head>
 <body>
+
+
+    <!-- Server-side rendered navigation bar -->
+    {% if logged_in_user %}
+    <header>
+        <!-- Upper left corner link to home -->
+        <a href="/" class="nav-left">Home</a>
+
+        <!-- Upper right corner links -->
+        <nav class="nav-right">
+            <a href="/explore/">Explore</a>
+            <a href="/users/{{ user_url_slug }}/">{{ logged_in_user }}</a>
+        </nav>
+    </header>
+    {% else %}
+    <script>window.location.href = '/accounts/login/';</script>
+    {% endif %}
+
+    <!-- Posts will be dynamically rendered by React -->
+    <!-- React entry point -->
     <div id="reactEntry">
         Loading ...
     </div>
+    
     <!-- Load JavaScript -->
     <script src="{{ url_for('static', filename='js/bundle.js') }}"></script>
-    <header>
-        <a href="/">Home</a>
-        <a href="/explore/" class="explore-link">Explore</a>
-        <a href="/users/{{ logged_in_user }}/" class="logged-in-user">{{ logged_in_user }}</a>
-    </header>
-    <main>
-        <h1>Posts</h1>
-        <div class="posts">
-            {% for post in posts %}
-                <div class="post">
-                    <a href="/posts/{{ post.postid }}/">just now: {{ post.created }}</a>
-                    <a href="/users/{{ post.username }}/">{{ post.username }}</a>
-                    <img src="/uploads/{{ post.user_filename }}" alt="{{ post.username }}'s profile picture">
-                    <img src="/uploads/{{ post.filename }}" alt="Post image">
-                    <p>{{ post.likes }} {{ 'like' if post.likes == 1 else 'likes' }}</p>
-                    <div class="comments">
-                        {% for comment in post.comments %}
-                            <p><a href="/users/{{ comment.username }}/">{{ comment.username }}</a> {{ comment.text }}</p>
-                        {% endfor %}
-                    </div>
-                    <!-- Like Form -->
-                    <form id="like-form-{{ post.postid }}" action="/likes/?target=/posts/{{ post.postid }}/" method="post" enctype="multipart/form-data" style="display: {{ 'none' if post.is_liked else 'block' }};">
-                        <input type="hidden" name="operation" value="like"/>
-                        <input type="hidden" name="postid" value="{{ post.postid }}"/>
-                        <input type="submit" value="like"/>
-                    </form>
-                    <!-- Unlike Form -->
-                    <form id="unlike-form-{{ post.postid }}" action="/likes/?target=/posts/{{ post.postid }}/" method="post" enctype="multipart/form-data" style="display: {{ 'block' if post.is_liked else 'none' }};">
-                        <input type="hidden" name="operation" value="unlike"/>
-                        <input type="hidden" name="postid" value="{{ post.postid }}"/>
-                        <input type="submit" name="unlike" value="unlike"/>
-                    </form>
-                    <!-- Comment Form -->
-                    <form action="/comments/?target=/posts/{{ post.postid }}/" method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="operation" value="create"/>
-                        <input type="hidden" name="postid" value="{{ post.postid }}"/>
-                        <input type="text" name="text" required/>
-                        <input type="submit" name="comment" value="comment"/>
-                    </form>
-                    <form action="/comments/" method="post" style="display:none"> </form>
-                    <form action="/likes/" method="post" style="display:none"> </form>
-
-                </div>
-            {% endfor %}
-        </div>
-    </main>
 </body>
 </html>
