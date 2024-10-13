@@ -1,6 +1,5 @@
-import React, { StrictMode, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import Post from "./post";
 import InfiniteScroll from "react-infinite-scroll-component"; // Import the Infinite Scroll component
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -30,7 +29,7 @@ function Feed() {
       const newPosts = await Promise.all(
         data.results.map(async (postInfo) => {
           const postResponse = await fetch(postInfo.url);
-          return await postResponse.json();
+          return postResponse.json();
         }),
       );
 
@@ -52,7 +51,7 @@ function Feed() {
   // Function to toggle likes for a post
   const handleLikeToggle = async (_post) => {
     try {
-      const postid = _post.postid;
+      const { postid } = _post;
       const isLiked = _post.likes.lognameLikesThis;
       const likeid = _post.likes.url;
       const url = isLiked ? likeid : `/api/v1/likes/?postid=${postid}`;
@@ -63,11 +62,11 @@ function Feed() {
       });
 
       if (response.ok) {
-        var updateUrl = null;
+        let updateUrl = null;
         try {
           const json = await response.json();
           updateUrl = json.url;
-        } catch (error) {
+        } catch (e) {
           // console.error(
           //   "Expected error in like toggle that I'm too lazy to fix:",
           //   error,
@@ -93,8 +92,8 @@ function Feed() {
       } else {
         console.error("Failed to update like status");
       }
-    } catch (error) {
-      console.error("Error in like toggle:", error);
+    } catch (e) {
+      console.error("Error in like toggle:", e);
     }
   };
 
@@ -117,7 +116,9 @@ function Feed() {
 
       if (response.ok) {
         const updatedPost = await response.json();
-        var oldComments = posts.find((post) => post.postid === postid).comments;
+        const oldComments = posts.find(
+          (post) => post.postid === postid,
+        ).comments;
         updatedPost.comments = [...oldComments, updatedPost];
         setPosts((prevPosts) =>
           prevPosts.map((post) =>
@@ -133,8 +134,8 @@ function Feed() {
       } else {
         console.error("Failed to add comment");
       }
-    } catch (error) {
-      console.error("Error in comment submit:", error);
+    } catch (e) {
+      console.error("Error in comment submit:", e);
     }
   };
 
@@ -161,8 +162,8 @@ function Feed() {
       } else {
         console.error("Failed to delete comment");
       }
-    } catch (error) {
-      console.error("Error in comment delete:", error);
+    } catch (e) {
+      console.error("Error in comment delete:", e);
     }
   };
 
@@ -220,6 +221,7 @@ function Feed() {
               {post.likes.numLikes === 1 ? "like" : "likes"}
             </p>
             <button
+              type="button"
               data-testid="like-unlike-button"
               onClick={() => handleLikeToggle(post)}
             >
@@ -237,6 +239,7 @@ function Feed() {
                   </span>
                   {comment.lognameOwnsThis && (
                     <button
+                      type="button"
                       data-testid="delete-comment-button"
                       onClick={() =>
                         handleDeleteComment(post.postid, comment.commentid)
