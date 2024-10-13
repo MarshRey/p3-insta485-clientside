@@ -330,7 +330,7 @@ def like_post():
         """, (logname, postid)
     )
     likeid = cur.lastrowid
-
+    print (likeid, file=sys.stderr)
     # Return the newly created like with a 201 status
     return jsonify({
         "likeid": likeid,
@@ -356,7 +356,8 @@ def delete_like(likeid):
         (likeid,)
     )
     like = cur.fetchone()
-
+    print (like, file=sys.stderr)
+    print (likeid, file=sys.stderr)
     if like is None:
         # Like does not exist
         return flask.jsonify({"message": "Like Not Found", "status_code": 404}), 404
@@ -373,7 +374,7 @@ def delete_like(likeid):
     )
 
     # Return 204 No Content on success
-    return ('', 204)
+    return (jsonify(''), 204)
   
 @insta485.app.route('/api/v1/comments/', methods=['POST'])
 @authenticate
