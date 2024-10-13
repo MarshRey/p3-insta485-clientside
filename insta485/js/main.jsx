@@ -1,6 +1,7 @@
 import React, { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import Post from "./post";
+import InfiniteScroll from 'react-infinite-scroll-component'; // Import the Infinite Scroll component
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
@@ -20,6 +21,7 @@ function Feed() {
   const [nextUrl, setNextUrl] = useState(null);  // State for the next page URL
   const [error, setError] = useState(null);      // State for error handling
   const [newComment, setNewComment] = useState(""); // State for new comment input
+  const [hasMore, setHasMore] = useState(true);  // To manage if more posts are available for scrolling
 
   // Function to fetch posts
   const fetchPosts = async (url) => {
@@ -34,7 +36,12 @@ function Feed() {
 
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       setNextUrl(data.next);  
-      setLoading(false);      
+      setLoading(false);
+
+      // If there's no next page, set hasMore to false
+      if (!data.next) {
+        setHasMore(false);
+      }
     } catch (err) {
       console.error('Error fetching posts:', err);
       setError('Failed to load posts.');
@@ -169,66 +176,72 @@ function Feed() {
     return <div>{error}</div>;
   }
 
-  console.log(posts); 
   return (
     <div>
-      {posts.map((post) => (
-        <div key={post.postid} className="post">
-          <h2>{post.owner}</h2>
+      {/* Infinite Scroll component wrapping the posts */}
+      <InfiniteScroll
+        dataLength={posts.length} // Current number of posts
+        next={loadMorePosts}      // Function to call when scrolling to the bottom
+        hasMore={hasMore}         // Whether or not there are more posts to load
+        loader={<h4>Loading more posts...</h4>}  // Loader displayed while loading new posts
+        endMessage={<p>No more posts to load</p>} // Message displayed when all posts are loaded
+      >
+        {posts.map((post) => (
+          <div key={post.postid} className="post">
+            <h2>{post.owner}</h2>
 
-          {/* Double-clicking the image should like the post if it's not already liked */}
-          <img 
-            src={post.imgUrl} 
-            alt="Post" 
-            onDoubleClick={() => handleDoubleClick(post)}  // Double-click handler
-          />
+            {/* Double-clicking the image should like the post if it's not already liked */}
+            <img 
+              src={post.imgUrl} 
+              alt="Post" 
+              onDoubleClick={() => handleDoubleClick(post)}  // Double-click handler
+            />
 
-          <p>{post.caption}</p>
+            <p>{post.caption}</p>
 
-          {/* Render post creation time using dayjs */}
-          <p>
-            Posted {dayjs.utc(post.created).local().fromNow()}
-          </p>
+            {/* Render post creation time using dayjs */}
+            <p>
+              Posted {dayjs.utc(post.created).local().fromNow()}
+            </p>
 
-          <p>{post.likes.numLikes} {post.likes.numLikes === 1 ? 'like' : 'likes'}</p>
-          <button onClick={() => handleLikeToggle(post)}>
-            {post.likes.lognameLikesThis ? 'Unlike' : 'Like'}
-          </button>
+            <p>{post.likes.numLikes} {post.likes.numLikes === 1 ? 'like' : 'likes'}</p>
+            <button onClick={() => handleLikeToggle(post)}>
+              {post.likes.lognameLikesThis ? 'Unlike' : 'Like'}
+            </button>
 
-          <div className="comments">
-            {post.comments.map((comment) => (
-              <div key={comment.commentid} className="comment">
-                <span data-testid="comment-text">
-                  <strong>{comment.owner}</strong> {comment.text}
-                </span>
-                {comment.lognameOwnsThis && (
-                  <button
-                    data-testid="delete-comment-button"
-                    onClick={() => handleDeleteComment(post.postid, comment.commentid)}
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            ))}
+            <div className="comments">
+              {post.comments.map((comment) => (
+                <div key={comment.commentid} className="comment">
+                  <span data-testid="comment-text">
+                    <strong>{comment.owner}</strong> {comment.text}
+                  </span>
+                  {comment.lognameOwnsThis && (
+                    <button
+                      data-testid="delete-comment-button"
+                      onClick={() => handleDeleteComment(post.postid, comment.commentid)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              ))}
 
-            {/* Comment input form */}
-            <form
-              data-testid="comment-form"
-              onSubmit={(event) => handleCommentSubmit(event, post.postid)}
-            >
-              <input
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-              />
-            </form>
+              {/* Comment input form */}
+              <form
+                data-testid="comment-form"
+                onSubmit={(event) => handleCommentSubmit(event, post.postid)}
+              >
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                />
+              </form>
+            </div>
           </div>
-        </div>
-      ))}
-
-      {nextUrl && <button onClick={loadMorePosts}>Load More</button>}
+        ))}
+      </InfiniteScroll>
     </div>
   );
 }
