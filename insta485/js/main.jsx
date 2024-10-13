@@ -86,6 +86,13 @@ function Feed() {
     }
   };
 
+  // Function to handle double-click on image
+  const handleDoubleClick = (post) => {
+    if (!post.likes.lognameLikesThis) {
+      handleLikeToggle(post);  // Like the post only if it's not already liked
+    }
+  };
+
   // Function to add a comment
   const handleCommentSubmit = async (event, postid) => {
     event.preventDefault();
@@ -168,7 +175,14 @@ function Feed() {
       {posts.map((post) => (
         <div key={post.postid} className="post">
           <h2>{post.owner}</h2>
-          <img src={post.imgUrl} alt="Post" />
+
+          {/* Double-clicking the image should like the post if it's not already liked */}
+          <img 
+            src={post.imgUrl} 
+            alt="Post" 
+            onDoubleClick={() => handleDoubleClick(post)}  // Double-click handler
+          />
+
           <p>{post.caption}</p>
 
           {/* Render post creation time using dayjs */}
