@@ -199,8 +199,8 @@ function Feed() {
       >
         {posts.map((post) => (
           <div key={post.postid} className="post">
-            <a href = {post.ownerShowUrl}>{post.owner}</a>
-            <img src = {post.ownerImgUrl} alt = "Avatar"/>
+            <a href={post.ownerShowUrl}>{post.owner}</a>
+            <img src={post.ownerImgUrl} alt="Avatar" />
             {/* Double-clicking the image should like the post if it's not already liked */}
             <img
               src={post.imgUrl}
@@ -211,13 +211,18 @@ function Feed() {
             <p>{post.caption}</p>
 
             {/* Render post creation time using dayjs */}
-            <a href = {post.postShowUrl}>Posted {dayjs.utc(post.created).local().fromNow()}</a>
+            <a href={post.postShowUrl}>
+              Posted {dayjs.utc(post.created).local().fromNow()}
+            </a>
 
             <p>
               {post.likes.numLikes}{" "}
               {post.likes.numLikes === 1 ? "like" : "likes"}
             </p>
-            <button data-testid='like-unlike-button' onClick={() => handleLikeToggle(post)}>
+            <button
+              data-testid="like-unlike-button"
+              onClick={() => handleLikeToggle(post)}
+            >
               {post.likes.lognameLikesThis ? "Unlike" : "Like"}
             </button>
 
@@ -225,7 +230,10 @@ function Feed() {
               {post.comments.map((comment) => (
                 <div key={comment.commentid} className="comment">
                   <span data-testid="comment-text">
-                    <strong><a href = {comment.ownerShowUrl}> {comment.owner} </a></strong> {comment.text}
+                    <strong>
+                      <a href={comment.ownerShowUrl}> {comment.owner} </a>
+                    </strong>{" "}
+                    {comment.text}
                   </span>
                   {comment.lognameOwnsThis && (
                     <button
